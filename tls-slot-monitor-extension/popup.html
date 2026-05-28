@@ -9,37 +9,66 @@
   <body>
     <main>
       <header>
-        <h1>TLS Slot Monitor</h1>
+        <div>
+          <p class="eyebrow">Local monitor</p>
+          <h1>TLS Slot Monitor</h1>
+        </div>
         <label class="switch">
           <input id="enabled" type="checkbox">
-          <span>On</span>
+          <span class="switch-track" aria-hidden="true"></span>
+          <span id="enabledLabel">Off</span>
         </label>
       </header>
 
-      <label>
-        Cutoff date
-        <input id="cutoffDate" type="date" min="2026-05-28" value="2026-06-20">
-      </label>
+      <section class="countdown" aria-live="polite">
+        <div id="countdownValue">--:--</div>
+        <div id="countdownLabel">Next refresh</div>
+      </section>
 
-      <label>
-        Refresh interval
-        <select id="refreshSeconds">
-          <option value="180">3 minutes</option>
-          <option value="300" selected>5 minutes</option>
-          <option value="600">10 minutes</option>
-          <option value="900">15 minutes</option>
-          <option value="1800">30 minutes</option>
-        </select>
-      </label>
+      <section class="controls">
+        <label>
+          Cutoff date
+          <input id="cutoffDate" type="date" min="2026-05-28" value="2026-06-20">
+        </label>
 
-      <label class="inline">
+        <label>
+          Interval
+          <select id="refreshSeconds">
+            <option value="180">3 min</option>
+            <option value="300" selected>5 min</option>
+            <option value="600">10 min</option>
+            <option value="900">15 min</option>
+            <option value="1800">30 min</option>
+          </select>
+        </label>
+      </section>
+
+      <label class="sound-row">
         <input id="sound" type="checkbox" checked>
         Sound alert
       </label>
 
       <button id="scanNow" type="button">Scan now</button>
 
-      <section id="status" aria-live="polite"></section>
+      <section class="status-card" aria-live="polite">
+        <div class="status-row">
+          <span>Last scan</span>
+          <strong id="lastScan">not yet</strong>
+        </div>
+        <div class="status-row">
+          <span>No-slot text</span>
+          <strong id="noSlots">unknown</strong>
+        </div>
+        <div class="status-row">
+          <span>Seen dates</span>
+          <strong id="seenDates">none</strong>
+        </div>
+        <div class="status-row hit-row">
+          <span>Last hit</span>
+          <strong id="lastHit">none</strong>
+        </div>
+        <div id="status" class="status-message"></div>
+      </section>
     </main>
 
     <script src="popup.js"></script>

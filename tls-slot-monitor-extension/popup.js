@@ -11,6 +11,13 @@ const fields = {
   refreshSeconds: document.getElementById("refreshSeconds"),
   sound: document.getElementById("sound"),
   scanNow: document.getElementById("scanNow"),
+  countdownValue: document.getElementById("countdownValue"),
+  countdownLabel: document.getElementById("countdownLabel"),
+  enabledLabel: document.getElementById("enabledLabel"),
+  lastScan: document.getElementById("lastScan"),
+  noSlots: document.getElementById("noSlots"),
+  seenDates: document.getElementById("seenDates"),
+  lastHit: document.getElementById("lastHit"),
   status: document.getElementById("status")
 };
 
@@ -34,7 +41,7 @@ function formatCountdown(value) {
   if (!value) return "paused";
   const ms = new Date(value).getTime() - Date.now();
   if (Number.isNaN(ms)) return "unknown";
-  if (ms <= 0) return "refreshing soon";
+  if (ms <= 0) return "now";
   const totalSeconds = Math.ceil(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -42,19 +49,28 @@ function formatCountdown(value) {
 }
 
 function renderStatus(data) {
-  const lines = [];
   latestStatus = data;
-  lines.push(`Last scan: ${formatLocalTime(data.lastScanAt)}`);
-  lines.push(`Next refresh: ${formatLocalTime(data.nextRefreshAt)} (${formatCountdown(data.nextRefreshAt)})`);
-  lines.push(`No-slots message: ${data.lastNoSlotsMessage === false ? "not visible" : "visible/unknown"}`);
+  fields.countdownValue.textContent = formatCountdown(data.nextRefreshAt);
+  fields.countdownLabel.textContent = "Next refresh";
+  fields.enabledLabel.textContent = fields.enabled.checked ? "On" : "Off";
+  fields.lastScan.textContent = formatLocalTime(data.lastScanAt);
+  fields.noSlots.textContent = data.lastNoSlotsMessage === null
+    ? "unknown"
+    : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
+
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
-    lines.push(`Last hit: ${data.lastHitDates.join(", ")}`);
-    lines.push(`Hit time: ${formatLocalTime(data.lastHitAt)}`);
+    fields.lastHit.textContent = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
+  } else {
+    fields.lastHit.textContent = "none";
   }
+
   if (Array.isArray(data.lastSeenDates) && data.lastSeenDates.length) {
-    lines.push(`Seen dates: ${data.lastSeenDates.slice(0, 8).join(", ")}`);
+    fields.seenDates.textContent = data.lastSeenDates.slice(0, 3).join(", ");
+  } else {
+    fields.seenDates.textContent = "none";
   }
-  fields.status.textContent = lines.join("\n");
+  fields.status.textContent = "";
+  fields.status.style.display = "none";
 }
 
 async function saveSettings() {
@@ -81,6 +97,7 @@ async function updateStatus() {
 }
 
 async function scanActiveTab() {
+  fields.status.style.display = "block";
   fields.status.textContent = "Scanning current tab...";
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id || !/visas-fr\.tlscontact\.com/.test(tab.url || "")) {
@@ -93,13 +110,15 @@ async function scanActiveTab() {
       fields.status.textContent = "Refresh the TLS appointment page, then try again.";
       return;
     }
+    fields.status.style.display = "block";
     fields.status.textContent =
       `Enabled: ${response.enabled}\n` +
       `Cutoff: ${response.cutoffDate}\n` +
-      `Next refresh: ${formatLocalTime(response.nextRefreshAt)} (${formatCountdown(response.nextRefreshAt)})\n` +
       `Matching dates: ${(response.matchingDates || []).join(", ") || "none"}\n` +
       `Visible slots: ${(response.slotLabels || []).slice(0, 5).join(", ") || "none"}\n` +
       `No-slots message: ${response.noSlots}`;
+    latestStatus = { ...latestStatus, nextRefreshAt: response.nextRefreshAt };
+    fields.countdownValue.textContent = formatCountdown(response.nextRefreshAt);
   });
 }
 
