@@ -10,6 +10,7 @@
   let state = { ...DEFAULTS };
   let timerId = null;
   let scanId = null;
+  let nextRefreshAt = "";
 
   function isoToday() {
     return new Date().toISOString().slice(0, 10);
@@ -127,8 +128,14 @@
     clearTimeout(timerId);
     clearInterval(scanId);
 
-    if (!state.enabled) return;
+    if (!state.enabled) {
+      nextRefreshAt = "";
+      chrome.storage.local.set({ nextRefreshAt: "" });
+      return;
+    }
 
+    nextRefreshAt = new Date(Date.now() + state.refreshSeconds * 1000).toISOString();
+    chrome.storage.local.set({ nextRefreshAt });
     scan();
     scanId = setInterval(scan, 15000);
     timerId = setTimeout(() => {
@@ -158,6 +165,7 @@
         enabled: state.enabled,
         cutoffDate: state.cutoffDate,
         refreshSeconds: state.refreshSeconds,
+        nextRefreshAt,
         matchingDates: findMatchingDates(),
         slotLabels: enabledSlotButtons(),
         noSlots: hasVisibleNoSlotsMessage()

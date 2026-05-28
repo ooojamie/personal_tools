@@ -16,6 +16,7 @@ What it does:
 - Scans the already-loaded page content for visible appointment-date data.
 - Sends a local desktop notification when it sees a date on or before the
   user-selected cutoff.
+- Shows the last scan time and next-refresh countdown in the popup.
 - Stores scan status only in local Chrome storage.
 
 What it does not do:

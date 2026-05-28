@@ -14,13 +14,42 @@ const fields = {
   status: document.getElementById("status")
 };
 
+let latestStatus = {};
+let countdownTimer = null;
+
+function formatLocalTime(value) {
+  if (!value) return "not yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toLocaleString(undefined, {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function formatCountdown(value) {
+  if (!value) return "paused";
+  const ms = new Date(value).getTime() - Date.now();
+  if (Number.isNaN(ms)) return "unknown";
+  if (ms <= 0) return "refreshing soon";
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function renderStatus(data) {
   const lines = [];
-  lines.push(`Last scan: ${data.lastScanAt || "not yet"}`);
+  latestStatus = data;
+  lines.push(`Last scan: ${formatLocalTime(data.lastScanAt)}`);
+  lines.push(`Next refresh: ${formatLocalTime(data.nextRefreshAt)} (${formatCountdown(data.nextRefreshAt)})`);
   lines.push(`No-slots message: ${data.lastNoSlotsMessage === false ? "not visible" : "visible/unknown"}`);
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
     lines.push(`Last hit: ${data.lastHitDates.join(", ")}`);
-    lines.push(`Hit time: ${data.lastHitAt || "unknown"}`);
+    lines.push(`Hit time: ${formatLocalTime(data.lastHitAt)}`);
   }
   if (Array.isArray(data.lastSeenDates) && data.lastSeenDates.length) {
     lines.push(`Seen dates: ${data.lastSeenDates.slice(0, 8).join(", ")}`);
@@ -43,6 +72,7 @@ async function updateStatus() {
     ...DEFAULTS,
     lastScanAt: "",
     lastHitAt: "",
+    nextRefreshAt: "",
     lastHitDates: [],
     lastSeenDates: [],
     lastNoSlotsMessage: null
@@ -66,6 +96,7 @@ async function scanActiveTab() {
     fields.status.textContent =
       `Enabled: ${response.enabled}\n` +
       `Cutoff: ${response.cutoffDate}\n` +
+      `Next refresh: ${formatLocalTime(response.nextRefreshAt)} (${formatCountdown(response.nextRefreshAt)})\n` +
       `Matching dates: ${(response.matchingDates || []).join(", ") || "none"}\n` +
       `Visible slots: ${(response.slotLabels || []).slice(0, 5).join(", ") || "none"}\n` +
       `No-slots message: ${response.noSlots}`;
@@ -85,3 +116,9 @@ for (const key of ["enabled", "cutoffDate", "refreshSeconds", "sound"]) {
 }
 
 fields.scanNow.addEventListener("click", scanActiveTab);
+
+countdownTimer = setInterval(() => {
+  if (Object.keys(latestStatus).length > 0) {
+    renderStatus(latestStatus);
+  }
+}, 1000);
