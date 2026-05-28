@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "TLS Slot Monitor",
+  "version": "0.1.0",
+  "description": "Local TLScontact appointment page monitor with conservative refresh and desktop alerts.",
+  "permissions": ["activeTab", "notifications", "storage"],
+  "host_permissions": ["https://visas-fr.tlscontact.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://visas-fr.tlscontact.com/workflow/appointment-booking/*",
+        "https://visas-fr.tlscontact.com/*/workflow/appointment-booking*",
+        "https://visas-fr.tlscontact.com/*workflow/appointment-booking*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TLS Slot Monitor"
+  },
+  "icons": {
+    "128": "icon-128.png"
+  }
+}
