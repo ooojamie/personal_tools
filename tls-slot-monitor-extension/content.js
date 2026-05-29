@@ -8,9 +8,7 @@
   };
 
   let state = { ...DEFAULTS };
-  let timerId = null;
   let scanId = null;
-  let nextRefreshAt = "";
 
   function isoToday() {
     return new Date().toISOString().slice(0, 10);
@@ -125,22 +123,17 @@
   }
 
   function schedule() {
-    clearTimeout(timerId);
     clearInterval(scanId);
 
     if (!state.enabled) {
-      nextRefreshAt = "";
       chrome.storage.local.set({ nextRefreshAt: "" });
+      chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
       return;
     }
 
-    nextRefreshAt = new Date(Date.now() + state.refreshSeconds * 1000).toISOString();
-    chrome.storage.local.set({ nextRefreshAt });
+    chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
     scan();
     scanId = setInterval(scan, 15000);
-    timerId = setTimeout(() => {
-      location.reload();
-    }, state.refreshSeconds * 1000);
   }
 
   chrome.storage.local.get(DEFAULTS, (raw) => {
@@ -150,22 +143,31 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
+    const settingsChanged = ["enabled", "cutoffDate", "refreshSeconds", "sound", "lastAlertKey"]
+      .some((key) => key in changes);
+    if (!settingsChanged) return;
+
     const next = { ...state };
     for (const [key, change] of Object.entries(changes)) {
       next[key] = change.newValue;
     }
     state = normalizeSettings(next);
-    schedule();
+    if ("enabled" in changes || "refreshSeconds" in changes) {
+      schedule();
+    }
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || message.type !== "tls-monitor-status") return;
-    scan().then(() => {
+    Promise.all([
+      scan(),
+      chrome.storage.local.get({ nextRefreshAt: "" })
+    ]).then(([, data]) => {
       sendResponse({
         enabled: state.enabled,
         cutoffDate: state.cutoffDate,
         refreshSeconds: state.refreshSeconds,
-        nextRefreshAt,
+        nextRefreshAt: data.nextRefreshAt,
         matchingDates: findMatchingDates(),
         slotLabels: enabledSlotButtons(),
         noSlots: hasVisibleNoSlotsMessage()

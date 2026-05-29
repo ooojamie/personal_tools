@@ -3,7 +3,7 @@
   "name": "TLS Slot Monitor",
   "version": "0.1.0",
   "description": "Local TLScontact appointment page monitor with conservative refresh and desktop alerts.",
-  "permissions": ["activeTab", "notifications", "storage"],
+  "permissions": ["activeTab", "alarms", "notifications", "storage", "tabs"],
   "host_permissions": ["https://visas-fr.tlscontact.com/*"],
   "background": {
     "service_worker": "background.js"

@@ -136,6 +136,20 @@ for (const key of ["enabled", "cutoffDate", "refreshSeconds", "sound"]) {
 
 fields.scanNow.addEventListener("click", scanActiveTab);
 
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  const displayKeys = [
+    "lastScanAt",
+    "lastHitAt",
+    "nextRefreshAt",
+    "lastHitDates",
+    "lastSeenDates",
+    "lastNoSlotsMessage"
+  ];
+  if (!displayKeys.some((key) => key in changes)) return;
+  updateStatus();
+});
+
 countdownTimer = setInterval(() => {
   if (Object.keys(latestStatus).length > 0) {
     renderStatus(latestStatus);

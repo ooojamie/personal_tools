@@ -12,7 +12,8 @@ granted. All rights reserved.
 What it does:
 
 - Runs only in the user's own browser on appointment-booking pages.
-- Refreshes the currently open page at a user-selected, conservative interval.
+- Refreshes matching appointment-booking tabs from the extension background
+  alarm at a user-selected, conservative interval.
 - Scans the already-loaded page content for visible appointment-date data.
 - Sends a local desktop notification when it sees a date on or before the
   user-selected cutoff.
