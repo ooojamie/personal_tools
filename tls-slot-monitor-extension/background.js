@@ -12,21 +12,31 @@ function nextRefreshIso(refreshSeconds) {
   return new Date(Date.now() + refreshSeconds * 1000).toISOString();
 }
 
-async function configureRefreshAlarm() {
+async function configureRefreshAlarm(options = {}) {
   const settings = await chrome.storage.local.get(DEFAULTS);
-  await chrome.alarms.clear(REFRESH_ALARM);
+  const refreshSeconds = normalizedRefreshSeconds(settings.refreshSeconds);
+  const existingAlarm = await chrome.alarms.get(REFRESH_ALARM);
 
   if (!settings.enabled) {
+    await chrome.alarms.clear(REFRESH_ALARM);
     await chrome.storage.local.set({ nextRefreshAt: "" });
-    return;
+    return { enabled: false, nextRefreshAt: "" };
   }
 
-  const refreshSeconds = normalizedRefreshSeconds(settings.refreshSeconds);
+  if (existingAlarm && !options.force) {
+    const nextRefreshAt = new Date(existingAlarm.scheduledTime).toISOString();
+    await chrome.storage.local.set({ nextRefreshAt });
+    return { enabled: true, nextRefreshAt };
+  }
+
+  await chrome.alarms.clear(REFRESH_ALARM);
   await chrome.alarms.create(REFRESH_ALARM, {
     delayInMinutes: refreshSeconds / 60,
     periodInMinutes: refreshSeconds / 60
   });
-  await chrome.storage.local.set({ nextRefreshAt: nextRefreshIso(refreshSeconds) });
+  const nextRefreshAt = nextRefreshIso(refreshSeconds);
+  await chrome.storage.local.set({ nextRefreshAt });
+  return { enabled: true, nextRefreshAt };
 }
 
 async function refreshAppointmentTabs() {
@@ -42,11 +52,8 @@ async function refreshAppointmentTabs() {
     ]
   });
 
-  await chrome.storage.local.set({
-    lastRefreshAttemptAt: new Date().toISOString(),
-    nextRefreshAt: nextRefreshIso(refreshSeconds),
-    refreshTabCount: tabs.length
-  });
+  const now = new Date().toISOString();
+  const nextRefreshAt = nextRefreshIso(refreshSeconds);
 
   for (const tab of tabs) {
     if (tab.id !== undefined) {
@@ -57,6 +64,15 @@ async function refreshAppointmentTabs() {
       }
     }
   }
+
+  const refreshState = {
+    nextRefreshAt,
+    refreshTabCount: tabs.length
+  };
+  if (tabs.length > 0) {
+    refreshState.lastRefreshAt = now;
+  }
+  await chrome.storage.local.set(refreshState);
 }
 
 chrome.runtime.onInstalled.addListener(configureRefreshAlarm);
@@ -65,7 +81,7 @@ chrome.runtime.onStartup.addListener(configureRefreshAlarm);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.enabled || changes.refreshSeconds) {
-    configureRefreshAlarm();
+    configureRefreshAlarm({ force: true });
   }
 });
 
@@ -75,12 +91,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return;
 
   if (message.type === "tls-monitor-sync") {
-    configureRefreshAlarm();
-    return;
+    configureRefreshAlarm({ force: Boolean(message.force) }).then(sendResponse);
+    return true;
   }
 
   if (message.type !== "tls-slot-found") return;

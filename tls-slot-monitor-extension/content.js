@@ -8,7 +8,6 @@
   };
 
   let state = { ...DEFAULTS };
-  let scanId = null;
 
   function isoToday() {
     return new Date().toISOString().slice(0, 10);
@@ -101,7 +100,7 @@
     });
   }
 
-  async function scan() {
+  async function checkPage() {
     if (!state.enabled) return;
 
     const matchingDates = findMatchingDates();
@@ -109,7 +108,7 @@
     const noSlots = hasVisibleNoSlotsMessage();
 
     await chrome.storage.local.set({
-      lastScanAt: new Date().toISOString(),
+      lastPageCheckAt: new Date().toISOString(),
       lastSeenDates: extractAvailableDates().slice(0, 80),
       lastSeenSlotLabels: slotLabels.slice(0, 20),
       lastNoSlotsMessage: noSlots
@@ -123,17 +122,14 @@
   }
 
   function schedule() {
-    clearInterval(scanId);
-
     if (!state.enabled) {
       chrome.storage.local.set({ nextRefreshAt: "" });
-      chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
+      chrome.runtime.sendMessage({ type: "tls-monitor-sync", force: true });
       return;
     }
 
     chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
-    scan();
-    scanId = setInterval(scan, 15000);
+    checkPage();
   }
 
   chrome.storage.local.get(DEFAULTS, (raw) => {
@@ -154,19 +150,22 @@
     state = normalizeSettings(next);
     if ("enabled" in changes || "refreshSeconds" in changes) {
       schedule();
+    } else if ("cutoffDate" in changes) {
+      checkPage();
     }
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || message.type !== "tls-monitor-status") return;
     Promise.all([
-      scan(),
-      chrome.storage.local.get({ nextRefreshAt: "" })
+      checkPage(),
+      chrome.storage.local.get({ lastRefreshAt: "", nextRefreshAt: "" })
     ]).then(([, data]) => {
       sendResponse({
         enabled: state.enabled,
         cutoffDate: state.cutoffDate,
         refreshSeconds: state.refreshSeconds,
+        lastRefreshAt: data.lastRefreshAt,
         nextRefreshAt: data.nextRefreshAt,
         matchingDates: findMatchingDates(),
         slotLabels: enabledSlotButtons(),

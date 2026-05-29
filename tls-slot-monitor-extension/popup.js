@@ -14,7 +14,7 @@ const fields = {
   countdownValue: document.getElementById("countdownValue"),
   countdownLabel: document.getElementById("countdownLabel"),
   enabledLabel: document.getElementById("enabledLabel"),
-  lastScan: document.getElementById("lastScan"),
+  lastRefresh: document.getElementById("lastRefresh"),
   noSlots: document.getElementById("noSlots"),
   seenDates: document.getElementById("seenDates"),
   lastHit: document.getElementById("lastHit"),
@@ -53,7 +53,7 @@ function renderStatus(data) {
   fields.countdownValue.textContent = formatCountdown(data.nextRefreshAt);
   fields.countdownLabel.textContent = "Next refresh";
   fields.enabledLabel.textContent = fields.enabled.checked ? "On" : "Off";
-  fields.lastScan.textContent = formatLocalTime(data.lastScanAt);
+  fields.lastRefresh.textContent = formatLocalTime(data.lastRefreshAt);
   fields.noSlots.textContent = data.lastNoSlotsMessage === null
     ? "unknown"
     : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
@@ -80,13 +80,14 @@ async function saveSettings() {
     refreshSeconds: Number(fields.refreshSeconds.value),
     sound: fields.sound.checked
   });
+  syncRefreshAlarm(true);
   updateStatus();
 }
 
 async function updateStatus() {
   const data = await chrome.storage.local.get({
     ...DEFAULTS,
-    lastScanAt: "",
+    lastRefreshAt: "",
     lastHitAt: "",
     nextRefreshAt: "",
     lastHitDates: [],
@@ -96,9 +97,21 @@ async function updateStatus() {
   renderStatus(data);
 }
 
+function syncRefreshAlarm(force = false) {
+  chrome.runtime.sendMessage({ type: "tls-monitor-sync", force }, (response) => {
+    if (chrome.runtime.lastError || !response) return;
+    latestStatus = {
+      ...latestStatus,
+      nextRefreshAt: response.nextRefreshAt || ""
+    };
+    fields.countdownValue.textContent = formatCountdown(response.nextRefreshAt);
+    updateStatus();
+  });
+}
+
 async function scanActiveTab() {
   fields.status.style.display = "block";
-  fields.status.textContent = "Scanning current tab...";
+  fields.status.textContent = "Checking current page...";
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id || !/visas-fr\.tlscontact\.com/.test(tab.url || "")) {
     fields.status.textContent = "Open the TLS appointment page first.";
@@ -127,6 +140,7 @@ chrome.storage.local.get(DEFAULTS, (data) => {
   fields.cutoffDate.value = data.cutoffDate || DEFAULTS.cutoffDate;
   fields.refreshSeconds.value = String(data.refreshSeconds || DEFAULTS.refreshSeconds);
   fields.sound.checked = data.sound !== false;
+  syncRefreshAlarm();
   updateStatus();
 });
 
@@ -139,7 +153,7 @@ fields.scanNow.addEventListener("click", scanActiveTab);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   const displayKeys = [
-    "lastScanAt",
+    "lastRefreshAt",
     "lastHitAt",
     "nextRefreshAt",
     "lastHitDates",

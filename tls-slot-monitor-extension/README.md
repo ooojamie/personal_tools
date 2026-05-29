@@ -14,10 +14,11 @@ What it does:
 - Runs only in the user's own browser on appointment-booking pages.
 - Refreshes matching appointment-booking tabs from the extension background
   alarm at a user-selected, conservative interval.
-- Scans the already-loaded page content for visible appointment-date data.
+- Checks the already-loaded page content for visible appointment-date data
+  after the page loads or when the user manually checks the page.
 - Sends a local desktop notification when it sees a date on or before the
   user-selected cutoff.
-- Shows the last scan time and next-refresh countdown in the popup.
+- Shows the last refresh time and next-refresh countdown in the popup.
 - Stores scan status only in local Chrome storage.
 
 What it does not do:
