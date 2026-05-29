@@ -57,6 +57,19 @@
       .filter((label) => /\b\d{2}:\d{2}\b/.test(label) && !/slot unavailable/i.test(label));
   }
 
+  function currentPageLoadIso() {
+    const loadedAt = Number(window.performance && window.performance.timeOrigin);
+    return new Date(Number.isFinite(loadedAt) ? loadedAt : Date.now()).toISOString();
+  }
+
+  async function recordPageLoad() {
+    const pageLoadedAt = currentPageLoadIso();
+    const stored = await chrome.storage.local.get({ lastRefreshAt: "" });
+    if (!stored.lastRefreshAt || new Date(stored.lastRefreshAt).getTime() < new Date(pageLoadedAt).getTime()) {
+      await chrome.storage.local.set({ lastRefreshAt: pageLoadedAt });
+    }
+  }
+
   function playBeep() {
     if (!state.sound) return;
     try {
@@ -129,6 +142,7 @@
     }
 
     chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
+    recordPageLoad();
     checkPage();
   }
 

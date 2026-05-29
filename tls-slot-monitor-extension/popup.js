@@ -4,6 +4,7 @@ const DEFAULTS = {
   refreshSeconds: 300,
   sound: true
 };
+const REFRESH_ALARM = "tls-slot-monitor-refresh";
 
 const fields = {
   enabled: document.getElementById("enabled"),
@@ -80,7 +81,6 @@ async function saveSettings() {
     refreshSeconds: Number(fields.refreshSeconds.value),
     sound: fields.sound.checked
   });
-  syncRefreshAlarm(true);
   updateStatus();
 }
 
@@ -97,21 +97,21 @@ async function updateStatus() {
   renderStatus(data);
 }
 
-function syncRefreshAlarm(force = false) {
-  chrome.runtime.sendMessage({ type: "tls-monitor-sync", force }, (response) => {
-    if (chrome.runtime.lastError || !response) return;
-    latestStatus = {
-      ...latestStatus,
-      nextRefreshAt: response.nextRefreshAt || ""
-    };
-    fields.countdownValue.textContent = formatCountdown(response.nextRefreshAt);
-    updateStatus();
+function readRefreshAlarm() {
+  chrome.alarms.get(REFRESH_ALARM, (alarm) => {
+    if (chrome.runtime.lastError) return;
+    if (!alarm) {
+      chrome.storage.local.set({ nextRefreshAt: "" }, updateStatus);
+      return;
+    }
+    const nextRefreshAt = new Date(alarm.scheduledTime).toISOString();
+    chrome.storage.local.set({ nextRefreshAt }, updateStatus);
   });
 }
 
 async function scanActiveTab() {
   fields.status.style.display = "block";
-  fields.status.textContent = "Checking current page...";
+  fields.status.textContent = "Scanning current page...";
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id || !/visas-fr\.tlscontact\.com/.test(tab.url || "")) {
     fields.status.textContent = "Open the TLS appointment page first.";
@@ -140,7 +140,7 @@ chrome.storage.local.get(DEFAULTS, (data) => {
   fields.cutoffDate.value = data.cutoffDate || DEFAULTS.cutoffDate;
   fields.refreshSeconds.value = String(data.refreshSeconds || DEFAULTS.refreshSeconds);
   fields.sound.checked = data.sound !== false;
-  syncRefreshAlarm();
+  readRefreshAlarm();
   updateStatus();
 });
 
