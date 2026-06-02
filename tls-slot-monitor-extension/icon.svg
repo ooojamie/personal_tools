@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Appointment availability icon">
-  <g fill="none" stroke="#07305f" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="24" y="26" width="80" height="82" rx="13" stroke-width="12"/>
-    <path d="M24 51h80" stroke-width="12"/>
-    <path d="M42 18v20M86 18v20" stroke-width="12"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Appointment scan icon">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 72a42 42 0 0 1 84-6" stroke="#07305f" stroke-width="17"/>
+    <path d="M102 80a42 42 0 0 1-57 28" stroke="#61ac64" stroke-width="17"/>
+    <path d="M49 20v22M79 20v22" stroke="#07305f" stroke-width="13"/>
   </g>
-  <circle cx="82" cy="78" r="18" fill="#61ac64" stroke="#ffffff" stroke-width="8"/>
 </svg>
