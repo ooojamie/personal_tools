@@ -9,6 +9,8 @@ any visa application centre, any consulate, or any government authority.
 This repository is public for backup and portability only. No license is
 granted. All rights reserved.
 
+Recent product updates are tracked in [CHANGELOG.md](CHANGELOG.md).
+
 What it does:
 
 - Runs only in the user's own browser on appointment-booking pages.

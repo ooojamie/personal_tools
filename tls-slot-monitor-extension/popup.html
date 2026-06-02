@@ -20,9 +20,15 @@
         </label>
       </header>
 
-      <section class="countdown" aria-live="polite">
-        <div id="countdownValue">--:--</div>
-        <div id="countdownLabel">Next refresh</div>
+      <section class="summary-strip" aria-live="polite">
+        <div class="summary-row next-row">
+          <span id="countdownLabel">Next refresh</span>
+          <strong id="countdownValue">--:--</strong>
+        </div>
+        <div class="summary-row">
+          <span>Last refresh</span>
+          <strong id="lastRefresh">not yet</strong>
+        </div>
       </section>
 
       <section class="controls">
@@ -66,29 +72,26 @@
         </div>
       </section>
 
-      <label class="sound-row">
-        <input id="sound" type="checkbox" checked>
-        Sound alert
-      </label>
-
-      <button id="scanNow" type="button">Scan now</button>
+      <section class="action-row">
+        <label class="sound-row">
+          <input id="sound" type="checkbox" checked>
+          Sound
+        </label>
+        <button id="scanNow" type="button">Scan now</button>
+      </section>
 
       <section class="status-card" aria-live="polite">
-        <div class="status-row">
-          <span>Last refresh</span>
-          <strong id="lastRefresh">not yet</strong>
-        </div>
-        <div class="status-row">
-          <span>No-slot text</span>
-          <strong id="noSlots">unknown</strong>
+        <div class="status-row hit-row">
+          <span>Last hit</span>
+          <strong id="lastHit">none</strong>
         </div>
         <div class="status-row">
           <span>Seen dates</span>
           <strong id="seenDates">none</strong>
         </div>
-        <div class="status-row hit-row">
-          <span>Last hit</span>
-          <strong id="lastHit">none</strong>
+        <div class="status-row">
+          <span>No-slot text</span>
+          <strong id="noSlots">unknown</strong>
         </div>
         <div id="status" class="status-message"></div>
       </section>
