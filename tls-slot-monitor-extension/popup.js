@@ -106,7 +106,7 @@ function renderStatus(data) {
     : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
 
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
-    fields.lastHit.textContent = `${formatMonthDay(data.lastHitAt)} ${formatTime24(data.lastHitAt)} -> ${compactAppointmentDates(data.lastHitDates, 2)}`;
+    fields.lastHit.textContent = `${compactAppointmentDates(data.lastHitDates, 2)} at ${formatLocalTime(data.lastHitAt)}`;
     fields.lastHit.title = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
   } else {
     fields.lastHit.textContent = "none";
