@@ -44,6 +44,10 @@ function formatLocalTime(value) {
 }
 
 function formatMonthDay(date) {
+  if (!(date instanceof Date)) {
+    date = new Date(date);
+  }
+  if (Number.isNaN(date.getTime())) return "unknown";
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${month}-${day}`;
@@ -102,7 +106,7 @@ function renderStatus(data) {
     : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
 
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
-    fields.lastHit.textContent = `${compactAppointmentDates(data.lastHitDates, 2)} · ${formatTime24(data.lastHitAt)}`;
+    fields.lastHit.textContent = `${formatMonthDay(data.lastHitAt)} ${formatTime24(data.lastHitAt)} -> ${compactAppointmentDates(data.lastHitDates, 2)}`;
     fields.lastHit.title = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
   } else {
     fields.lastHit.textContent = "none";

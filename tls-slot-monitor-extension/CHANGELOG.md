@@ -4,8 +4,8 @@
 
 - Refined the popup header so the product name, local badge, and monitor
   context feel closer to the rest of the interface.
-- Kept status values compact, with 24-hour last-hit time and two-date seen
-  summaries.
+- Kept status values compact while showing both the last-hit detection time and
+  appointment dates.
 - Restored the clearer `Sound alert` label.
 - Compact popup layout: smaller next-refresh display, last-refresh summary near
   the countdown, and tighter status rows.
