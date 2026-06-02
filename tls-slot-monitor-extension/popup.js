@@ -40,13 +40,23 @@ function formatLocalTime(value) {
   if (!value) return "not yet";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "unknown";
-  return date.toLocaleString(undefined, {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
+  return `${formatMonthDay(date)} ${formatTime24(date, true)}`;
+}
+
+function formatMonthDay(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${month}-${day}`;
+}
+
+function formatTime24(value, includeSeconds = false) {
+  if (!value) return "unknown";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return includeSeconds ? `${hour}:${minute}:${second}` : `${hour}:${minute}`;
 }
 
 function formatCountdown(value) {
@@ -69,6 +79,18 @@ function summarizeList(values, limit) {
   return shown.join(", ");
 }
 
+function compactAppointmentDates(values, limit) {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  const shown = items.slice(0, limit).map((value) => {
+    const match = String(value).match(/^20\d{2}-(\d{2})-(\d{2})$/);
+    return match ? `${match[1]}-${match[2]}` : String(value);
+  });
+  if (items.length > limit) {
+    shown.push(`+${items.length - limit}`);
+  }
+  return shown.join(", ");
+}
+
 function renderStatus(data) {
   latestStatus = data;
   fields.countdownValue.textContent = formatCountdown(data.nextRefreshAt);
@@ -80,7 +102,7 @@ function renderStatus(data) {
     : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
 
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
-    fields.lastHit.textContent = `${summarizeList(data.lastHitDates, 2)} at ${formatLocalTime(data.lastHitAt)}`;
+    fields.lastHit.textContent = `${compactAppointmentDates(data.lastHitDates, 2)} · ${formatTime24(data.lastHitAt)}`;
     fields.lastHit.title = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
   } else {
     fields.lastHit.textContent = "none";

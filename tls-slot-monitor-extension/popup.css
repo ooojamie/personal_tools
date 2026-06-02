@@ -266,8 +266,8 @@ button {
 
 .status-row {
   display: grid;
-  grid-template-columns: 88px 1fr;
-  gap: 8px;
+  grid-template-columns: 78px 1fr;
+  gap: 6px;
   align-items: start;
   min-height: 18px;
 }
@@ -289,6 +289,8 @@ button {
 }
 
 .hit-row strong {
+  overflow: visible;
+  text-overflow: clip;
   color: #19755b;
 }
 
