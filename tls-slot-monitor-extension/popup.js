@@ -60,6 +60,15 @@ function formatCountdown(value) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function summarizeList(values, limit) {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  const shown = items.slice(0, limit);
+  if (items.length > limit) {
+    shown.push(`+${items.length - limit}`);
+  }
+  return shown.join(", ");
+}
+
 function renderStatus(data) {
   latestStatus = data;
   fields.countdownValue.textContent = formatCountdown(data.nextRefreshAt);
@@ -71,15 +80,19 @@ function renderStatus(data) {
     : (data.lastNoSlotsMessage === false ? "not visible" : "visible");
 
   if (Array.isArray(data.lastHitDates) && data.lastHitDates.length) {
-    fields.lastHit.textContent = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
+    fields.lastHit.textContent = `${summarizeList(data.lastHitDates, 2)} at ${formatLocalTime(data.lastHitAt)}`;
+    fields.lastHit.title = `${data.lastHitDates.join(", ")} at ${formatLocalTime(data.lastHitAt)}`;
   } else {
     fields.lastHit.textContent = "none";
+    fields.lastHit.title = "";
   }
 
   if (Array.isArray(data.lastSeenDates) && data.lastSeenDates.length) {
-    fields.seenDates.textContent = data.lastSeenDates.slice(0, 3).join(", ");
+    fields.seenDates.textContent = summarizeList(data.lastSeenDates, 2);
+    fields.seenDates.title = data.lastSeenDates.join(", ");
   } else {
     fields.seenDates.textContent = "none";
+    fields.seenDates.title = "";
   }
   fields.status.textContent = "";
   fields.status.style.display = "none";

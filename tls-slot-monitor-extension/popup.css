@@ -278,7 +278,10 @@ button {
 }
 
 .status-row strong {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #1d2939;
   font-size: 12px;
   font-weight: 700;
