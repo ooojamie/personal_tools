@@ -2,7 +2,7 @@
 
 ## 2026-06-02
 
-- Replaced the extension icon with a calendar-and-radar monitor mark and added
+- Replaced the extension icon with a minimal calendar availability mark and
   standard Chrome icon sizes.
 - Refined the popup header so the product name, local badge, and monitor
   context feel closer to the rest of the interface.

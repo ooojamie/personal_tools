@@ -1,17 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Calendar radar monitor icon">
-  <rect width="128" height="128" rx="22" fill="#07305f"/>
-  <rect x="22" y="28" width="76" height="76" rx="11" fill="#ffffff"/>
-  <rect x="22" y="28" width="76" height="21" rx="11" fill="#62a8f7"/>
-  <rect x="34" y="18" width="9" height="24" rx="4.5" fill="#ffffff"/>
-  <rect x="77" y="18" width="9" height="24" rx="4.5" fill="#ffffff"/>
-  <rect x="35" y="58" width="13" height="13" rx="3" fill="#c9d4e4"/>
-  <rect x="56" y="58" width="13" height="13" rx="3" fill="#c9d4e4"/>
-  <rect x="35" y="79" width="13" height="13" rx="3" fill="#c9d4e4"/>
-  <rect x="56" y="79" width="13" height="13" rx="3" fill="#61ac64"/>
-  <circle cx="89" cy="89" r="27" fill="#07305f"/>
-  <path d="M72 91a18 18 0 1 1 33-10" fill="none" stroke="#9fd36f" stroke-width="7" stroke-linecap="round"/>
-  <path d="M63 91a27 27 0 1 1 50-15" fill="none" stroke="#9fd36f" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="89" cy="89" r="7" fill="#ffffff"/>
-  <path d="M93 84l20-21" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="103" cy="102" r="7" fill="#ffb13b" stroke="#ffd68a" stroke-width="4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Appointment availability icon">
+  <g fill="none" stroke="#07305f" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="24" y="26" width="80" height="82" rx="13" stroke-width="12"/>
+    <path d="M24 51h80" stroke-width="12"/>
+    <path d="M42 18v20M86 18v20" stroke-width="12"/>
+  </g>
+  <circle cx="82" cy="78" r="18" fill="#61ac64" stroke="#ffffff" stroke-width="8"/>
 </svg>
