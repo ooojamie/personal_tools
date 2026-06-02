@@ -124,13 +124,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type !== "tls-slot-found") return;
 
   const dates = Array.isArray(message.dates) ? message.dates.join(", ") : "matching dates";
+  const slots = Array.isArray(message.slots) && message.slots.length
+    ? message.slots.slice(0, 3).join(", ")
+    : dates;
   const tabId = sender && sender.tab ? sender.tab.id : undefined;
 
   chrome.notifications.create({
     type: "basic",
     iconUrl: "icon-128.png",
     title: "TLS appointment slot found",
-    message: `Possible appointment before cutoff: ${dates}`,
+    message: `Possible match: ${slots}`,
     priority: 2
   });
 

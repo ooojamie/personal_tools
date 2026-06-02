@@ -2,6 +2,9 @@ const DEFAULTS = {
   enabled: false,
   cutoffDate: "2026-06-20",
   refreshSeconds: 300,
+  weekdays: [],
+  startTime: "",
+  endTime: "",
   sound: true
 };
 const REFRESH_ALARM = "tls-slot-monitor-refresh";
@@ -10,6 +13,9 @@ const fields = {
   enabled: document.getElementById("enabled"),
   cutoffDate: document.getElementById("cutoffDate"),
   refreshSeconds: document.getElementById("refreshSeconds"),
+  weekdayChips: [...document.querySelectorAll(".weekday-chip")],
+  startTime: document.getElementById("startTime"),
+  endTime: document.getElementById("endTime"),
   sound: document.getElementById("sound"),
   scanNow: document.getElementById("scanNow"),
   countdownValue: document.getElementById("countdownValue"),
@@ -74,11 +80,27 @@ function renderStatus(data) {
   fields.status.style.display = "none";
 }
 
+function selectedWeekdays() {
+  return fields.weekdayChips
+    .filter((button) => button.classList.contains("is-selected"))
+    .map((button) => Number(button.dataset.day));
+}
+
+function renderWeekdays(days) {
+  const selected = new Set(Array.isArray(days) ? days.map(Number) : []);
+  fields.weekdayChips.forEach((button) => {
+    button.classList.toggle("is-selected", selected.has(Number(button.dataset.day)));
+  });
+}
+
 async function saveSettings() {
   await chrome.storage.local.set({
     enabled: fields.enabled.checked,
     cutoffDate: fields.cutoffDate.value || DEFAULTS.cutoffDate,
     refreshSeconds: Number(fields.refreshSeconds.value),
+    weekdays: selectedWeekdays(),
+    startTime: fields.startTime.value || "",
+    endTime: fields.endTime.value || "",
     sound: fields.sound.checked
   });
   updateStatus();
@@ -149,14 +171,24 @@ chrome.storage.local.get(DEFAULTS, (data) => {
   fields.enabled.checked = Boolean(data.enabled);
   fields.cutoffDate.value = data.cutoffDate || DEFAULTS.cutoffDate;
   fields.refreshSeconds.value = String(data.refreshSeconds || DEFAULTS.refreshSeconds);
+  renderWeekdays(data.weekdays || []);
+  fields.startTime.value = data.startTime || "";
+  fields.endTime.value = data.endTime || "";
   fields.sound.checked = data.sound !== false;
   readRefreshAlarm();
   updateStatus();
 });
 
-for (const key of ["enabled", "cutoffDate", "refreshSeconds", "sound"]) {
+for (const key of ["enabled", "cutoffDate", "refreshSeconds", "startTime", "endTime", "sound"]) {
   fields[key].addEventListener("change", saveSettings);
 }
+
+fields.weekdayChips.forEach((button) => {
+  button.addEventListener("click", () => {
+    button.classList.toggle("is-selected");
+    saveSettings();
+  });
+});
 
 fields.scanNow.addEventListener("click", scanNow);
 

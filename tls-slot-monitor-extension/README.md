@@ -16,6 +16,8 @@ What it does:
   alarm at a user-selected, conservative interval.
 - Lets the user manually trigger one immediate refresh, which also restarts the
   next-refresh countdown.
+- Filters local alerts by cutoff date, selected weekdays, and optional time
+  window.
 - Checks the already-loaded page content for visible appointment-date data
   after the page loads.
 - Sends a local desktop notification when it sees a date on or before the

@@ -160,6 +160,49 @@ button {
   cursor: pointer;
 }
 
+.filter-card {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.filter-label {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.weekday-chip {
+  min-height: 30px;
+  padding: 0;
+  color: #344054;
+  background: #f8fafc;
+  border-color: #d8e0ea;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.weekday-chip.is-selected {
+  color: #ffffff;
+  background: #19755b;
+  border-color: #19755b;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .status-card {
   display: grid;
   gap: 8px;
