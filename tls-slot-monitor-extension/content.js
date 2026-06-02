@@ -7,6 +7,7 @@
     startTime: "",
     endTime: "",
     sound: true,
+    loginAssist: true,
     lastAlertKey: ""
   };
 
@@ -26,8 +27,112 @@
       startTime: /^\d{2}:\d{2}$/.test(raw.startTime || "") ? raw.startTime : "",
       endTime: /^\d{2}:\d{2}$/.test(raw.endTime || "") ? raw.endTime : "",
       sound: raw.sound !== false,
+      loginAssist: raw.loginAssist !== false,
       lastAlertKey: String(raw.lastAlertKey || "")
     };
+  }
+
+  function pageText() {
+    return document.body ? document.body.innerText : "";
+  }
+
+  function isAppointmentPage() {
+    return /\/workflow\/appointment-booking/i.test(location.pathname);
+  }
+
+  function isVerificationPage() {
+    const text = pageText();
+    return /captcha|verify you are human|human verification|checking your browser|cloudflare|security check|unusual traffic|are you human|robot|机器人|人机|安全检查/i.test(text);
+  }
+
+  function isLoginPage() {
+    const text = pageText();
+    const hasPasswordInput = Boolean(document.querySelector("input[type='password']"));
+    const hasLoginUrl = /login|signin|sign-in|auth|oauth|connect/i.test(location.href);
+    const hasLoginText = /log in|login|sign in|sign-in|connexion|se connecter|session expired|登录|登入/i.test(text);
+    return hasPasswordInput || hasLoginUrl || hasLoginText;
+  }
+
+  function visibleElement(element) {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+  }
+
+  function loginButton() {
+    const candidates = [
+      ...document.querySelectorAll("button:not([disabled]), input[type='submit']:not([disabled]), [role='button']")
+    ];
+    return candidates.find((element) => {
+      if (!visibleElement(element)) return false;
+      const label = (element.innerText || element.value || element.getAttribute("aria-label") || "").trim();
+      if (/captcha|verify|verification|human|robot|机器人|人机/i.test(label)) return false;
+      return /log in|login|sign in|sign-in|continue|submit|connexion|se connecter|登录|登入|继续/i.test(label);
+    });
+  }
+
+  function sendAuthState(status) {
+    chrome.runtime.sendMessage({ type: "tls-auth-state", status, url: location.href });
+  }
+
+  async function handleLoginPage() {
+    if (isVerificationPage()) {
+      sendAuthState("verification-needed");
+      return true;
+    }
+
+    sendAuthState("login-needed");
+    if (!state.loginAssist) return true;
+
+    const attemptKey = `${location.origin}${location.pathname}`;
+    const stored = await chrome.storage.local.get({ loginAssistAttemptKey: "" });
+    if (stored.loginAssistAttemptKey === attemptKey) {
+      return true;
+    }
+
+    await chrome.storage.local.set({
+      loginAssistAttemptKey: attemptKey,
+      loginAssistAttemptedAt: new Date().toISOString()
+    });
+    sendAuthState("login-assisting");
+
+    setTimeout(() => {
+      if (isVerificationPage()) {
+        sendAuthState("verification-needed");
+        return;
+      }
+      const button = loginButton();
+      if (button) {
+        button.click();
+      } else {
+        sendAuthState("manual-login-needed");
+      }
+    }, 3500);
+
+    setTimeout(() => {
+      if (isVerificationPage()) {
+        sendAuthState("verification-needed");
+      } else if (isLoginPage()) {
+        sendAuthState("manual-login-needed");
+      }
+    }, 18000);
+
+    return true;
+  }
+
+  async function handleAuthState() {
+    if (isVerificationPage()) {
+      sendAuthState("verification-needed");
+      return true;
+    }
+    if (isLoginPage()) {
+      return handleLoginPage();
+    }
+    if (isAppointmentPage()) {
+      await chrome.storage.local.set({ loginAssistAttemptKey: "" });
+      sendAuthState("monitoring");
+    }
+    return false;
   }
 
   function appointmentText() {
@@ -233,12 +338,16 @@
     }
   }
 
-  function schedule() {
+  async function schedule() {
     if (!state.enabled) {
       chrome.storage.local.set({ nextRefreshAt: "" });
       chrome.runtime.sendMessage({ type: "tls-monitor-sync", force: true });
       return;
     }
+
+    const handledAuth = await handleAuthState();
+    if (handledAuth) return;
+    if (!isAppointmentPage()) return;
 
     chrome.runtime.sendMessage({ type: "tls-monitor-sync" });
     recordPageLoad();
@@ -252,7 +361,7 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
-    const settingsChanged = ["enabled", "cutoffDate", "refreshSeconds", "weekdays", "startTime", "endTime", "sound", "lastAlertKey"]
+    const settingsChanged = ["enabled", "cutoffDate", "refreshSeconds", "weekdays", "startTime", "endTime", "sound", "loginAssist", "lastAlertKey"]
       .some((key) => key in changes);
     if (!settingsChanged) return;
 
@@ -261,7 +370,7 @@
       next[key] = change.newValue;
     }
     state = normalizeSettings(next);
-    if ("enabled" in changes || "refreshSeconds" in changes) {
+    if ("enabled" in changes || "refreshSeconds" in changes || "loginAssist" in changes) {
       schedule();
     } else if ("cutoffDate" in changes || "weekdays" in changes || "startTime" in changes || "endTime" in changes) {
       checkPage();
@@ -281,6 +390,7 @@
         weekdays: state.weekdays,
         startTime: state.startTime,
         endTime: state.endTime,
+        loginAssist: state.loginAssist,
         lastRefreshAt: data.lastRefreshAt,
         nextRefreshAt: data.nextRefreshAt,
         matchingDates: findMatchingDates(),

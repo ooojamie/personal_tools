@@ -1,7 +1,8 @@
 const REFRESH_ALARM = "tls-slot-monitor-refresh";
 const DEFAULTS = {
   enabled: false,
-  refreshSeconds: 300
+  refreshSeconds: 300,
+  refreshPaused: false
 };
 
 function normalizedRefreshSeconds(value) {
@@ -28,10 +29,10 @@ async function configureRefreshAlarm(options = {}) {
   const refreshSeconds = normalizedRefreshSeconds(settings.refreshSeconds);
   const existingAlarm = await chrome.alarms.get(REFRESH_ALARM);
 
-  if (!settings.enabled) {
+  if (!settings.enabled || settings.refreshPaused) {
     await chrome.alarms.clear(REFRESH_ALARM);
     await chrome.storage.local.set({ nextRefreshAt: "" });
-    return { enabled: false, nextRefreshAt: "" };
+    return { enabled: Boolean(settings.enabled), paused: Boolean(settings.refreshPaused), nextRefreshAt: "" };
   }
 
   if (existingAlarm && !options.force) {
@@ -48,6 +49,9 @@ async function refreshAppointmentTabs(options = {}) {
   const settings = await chrome.storage.local.get(DEFAULTS);
   if (!settings.enabled) {
     return { refreshed: false, tabCount: 0, reason: "disabled", nextRefreshAt: "" };
+  }
+  if (settings.refreshPaused) {
+    return { refreshed: false, tabCount: 0, reason: "paused", nextRefreshAt: "" };
   }
 
   const refreshSeconds = normalizedRefreshSeconds(settings.refreshSeconds);
@@ -92,12 +96,45 @@ async function refreshAppointmentTabs(options = {}) {
   };
 }
 
+async function pauseRefresh(reason) {
+  await chrome.alarms.clear(REFRESH_ALARM);
+  const now = new Date().toISOString();
+  await chrome.storage.local.set({
+    nextRefreshAt: "",
+    refreshPaused: true,
+    refreshPauseReason: reason,
+    authStatus: reason,
+    authStatusAt: now
+  });
+  return { paused: true, reason, authStatusAt: now };
+}
+
+async function resumeRefresh() {
+  await chrome.storage.local.set({
+    refreshPaused: false,
+    refreshPauseReason: "",
+    authStatus: "monitoring",
+    authStatusAt: new Date().toISOString()
+  });
+  return configureRefreshAlarm({ force: true });
+}
+
+function notifyAuth(title, message) {
+  chrome.notifications.create({
+    type: "basic",
+    iconUrl: "icon-128.png",
+    title,
+    message,
+    priority: 2
+  });
+}
+
 chrome.runtime.onInstalled.addListener(configureRefreshAlarm);
 chrome.runtime.onStartup.addListener(configureRefreshAlarm);
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.enabled || changes.refreshSeconds) {
+  if (changes.enabled || changes.refreshSeconds || changes.refreshPaused) {
     configureRefreshAlarm({ force: true });
   }
 });
@@ -119,6 +156,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "tls-refresh-now") {
     refreshAppointmentTabs({ resetAlarm: true }).then(sendResponse);
     return true;
+  }
+
+  if (message.type === "tls-auth-state") {
+    const status = String(message.status || "");
+    if (status === "monitoring") {
+      resumeRefresh().then(sendResponse);
+      return true;
+    }
+    if (["login-needed", "login-assisting", "manual-login-needed", "verification-needed"].includes(status)) {
+      pauseRefresh(status).then((response) => {
+        if (status === "verification-needed") {
+          notifyAuth("TLS verification needed", "Manual verification is required before monitoring can continue.");
+        } else if (status === "manual-login-needed") {
+          notifyAuth("TLS login needed", "Automatic login assist did not complete. Please log in manually.");
+        }
+        sendResponse(response);
+      });
+      return true;
+    }
   }
 
   if (message.type !== "tls-slot-found") return;

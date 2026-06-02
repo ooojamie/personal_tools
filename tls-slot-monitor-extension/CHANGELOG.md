@@ -2,6 +2,9 @@
 
 ## 2026-06-02
 
+- Added login assist: refresh pauses on login or verification pages, ordinary
+  login buttons are tried once, and monitoring resumes after returning to the
+  appointment page.
 - Replaced the extension icon with a blue ring and green slot center mark, plus
   standard Chrome icon sizes.
 - Refined the popup header so the product name, local badge, and monitor

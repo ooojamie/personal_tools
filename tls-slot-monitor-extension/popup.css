@@ -197,6 +197,11 @@ select {
   min-height: auto;
 }
 
+.action-options {
+  display: grid;
+  gap: 4px;
+}
+
 button {
   color: #ffffff;
   background: #123c69;

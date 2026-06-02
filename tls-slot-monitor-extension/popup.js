@@ -5,7 +5,8 @@ const DEFAULTS = {
   weekdays: [],
   startTime: "",
   endTime: "",
-  sound: true
+  sound: true,
+  loginAssist: true
 };
 const REFRESH_ALARM = "tls-slot-monitor-refresh";
 const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, index) => {
@@ -22,6 +23,7 @@ const fields = {
   startTime: document.getElementById("startTime"),
   endTime: document.getElementById("endTime"),
   sound: document.getElementById("sound"),
+  loginAssist: document.getElementById("loginAssist"),
   scanNow: document.getElementById("scanNow"),
   countdownValue: document.getElementById("countdownValue"),
   countdownLabel: document.getElementById("countdownLabel"),
@@ -120,8 +122,19 @@ function renderStatus(data) {
     fields.seenDates.textContent = "none";
     fields.seenDates.title = "";
   }
-  fields.status.textContent = "";
-  fields.status.style.display = "none";
+  if (data.refreshPaused && data.authStatus && data.authStatus !== "monitoring") {
+    const labels = {
+      "login-needed": "Login needed. Refresh paused.",
+      "login-assisting": "Login assist tried once.",
+      "manual-login-needed": "Manual login needed.",
+      "verification-needed": "Verification needed."
+    };
+    fields.status.textContent = labels[data.authStatus] || "Refresh paused.";
+    fields.status.style.display = "block";
+  } else {
+    fields.status.textContent = "";
+    fields.status.style.display = "none";
+  }
 }
 
 function selectedWeekdays() {
@@ -154,7 +167,8 @@ async function saveSettings() {
     weekdays: selectedWeekdays(),
     startTime: fields.startTime.value || "",
     endTime: fields.endTime.value || "",
-    sound: fields.sound.checked
+    sound: fields.sound.checked,
+    loginAssist: fields.loginAssist.checked
   });
   updateStatus();
 }
@@ -165,6 +179,9 @@ async function updateStatus() {
     lastRefreshAt: "",
     lastHitAt: "",
     nextRefreshAt: "",
+    refreshPaused: false,
+    authStatus: "",
+    authStatusAt: "",
     lastHitDates: [],
     lastSeenDates: [],
     lastNoSlotsMessage: null
@@ -202,6 +219,12 @@ async function scanNow() {
       return;
     }
 
+    if (response.reason === "paused") {
+      fields.status.textContent = "Refresh paused for login or verification.";
+      updateStatus();
+      return;
+    }
+
     if (!response.refreshed) {
       fields.status.textContent = "Open the TLS appointment page first.";
       latestStatus = { ...latestStatus, nextRefreshAt: response.nextRefreshAt };
@@ -230,11 +253,12 @@ chrome.storage.local.get(DEFAULTS, (data) => {
   fields.startTime.value = data.startTime || "";
   fields.endTime.value = data.endTime || "";
   fields.sound.checked = data.sound !== false;
+  fields.loginAssist.checked = data.loginAssist !== false;
   readRefreshAlarm();
   updateStatus();
 });
 
-for (const key of ["enabled", "cutoffDate", "refreshSeconds", "startTime", "endTime", "sound"]) {
+for (const key of ["enabled", "cutoffDate", "refreshSeconds", "startTime", "endTime", "sound", "loginAssist"]) {
   fields[key].addEventListener("change", saveSettings);
 }
 
@@ -253,6 +277,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     "lastRefreshAt",
     "lastHitAt",
     "nextRefreshAt",
+    "refreshPaused",
+    "authStatus",
+    "authStatusAt",
     "lastHitDates",
     "lastSeenDates",
     "lastNoSlotsMessage"

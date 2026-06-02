@@ -20,6 +20,8 @@ What it does:
   next-refresh countdown.
 - Filters local alerts by cutoff date, selected weekdays, and optional time
   window.
+- Pauses refresh on login or verification pages and can try an ordinary login
+  button once after Chrome autofill.
 - Checks the already-loaded page content for visible appointment-date data
   after the page loads.
 - Sends a local desktop notification when it sees a date on or before the

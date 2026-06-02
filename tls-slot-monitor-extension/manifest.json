@@ -11,6 +11,7 @@
   "content_scripts": [
     {
       "matches": [
+        "https://visas-fr.tlscontact.com/*",
         "https://visas-fr.tlscontact.com/workflow/appointment-booking/*",
         "https://visas-fr.tlscontact.com/*/workflow/appointment-booking*",
         "https://visas-fr.tlscontact.com/*workflow/appointment-booking*"
