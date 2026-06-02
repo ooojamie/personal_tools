@@ -109,29 +109,39 @@ function readRefreshAlarm() {
   });
 }
 
-async function scanActiveTab() {
+async function scanNow() {
   fields.status.style.display = "block";
-  fields.status.textContent = "Scanning current page...";
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !tab.id || !/visas-fr\.tlscontact\.com/.test(tab.url || "")) {
-    fields.status.textContent = "Open the TLS appointment page first.";
-    return;
-  }
+  fields.status.textContent = "Refreshing appointment page...";
+  fields.scanNow.disabled = true;
 
-  chrome.tabs.sendMessage(tab.id, { type: "tls-monitor-status" }, (response) => {
+  chrome.runtime.sendMessage({ type: "tls-refresh-now" }, (response) => {
+    fields.scanNow.disabled = false;
+
     if (chrome.runtime.lastError) {
-      fields.status.textContent = "Refresh the TLS appointment page, then try again.";
+      fields.status.textContent = "Refresh failed. Reload the extension and try again.";
       return;
     }
+
+    if (!response || response.reason === "disabled") {
+      fields.status.textContent = "Turn the monitor on first.";
+      return;
+    }
+
+    if (!response.refreshed) {
+      fields.status.textContent = "Open the TLS appointment page first.";
+      latestStatus = { ...latestStatus, nextRefreshAt: response.nextRefreshAt };
+      fields.countdownValue.textContent = formatCountdown(response.nextRefreshAt);
+      return;
+    }
+
+    latestStatus = {
+      ...latestStatus,
+      lastRefreshAt: response.lastRefreshAt,
+      nextRefreshAt: response.nextRefreshAt
+    };
+    renderStatus(latestStatus);
     fields.status.style.display = "block";
-    fields.status.textContent =
-      `Enabled: ${response.enabled}\n` +
-      `Cutoff: ${response.cutoffDate}\n` +
-      `Matching dates: ${(response.matchingDates || []).join(", ") || "none"}\n` +
-      `Visible slots: ${(response.slotLabels || []).slice(0, 5).join(", ") || "none"}\n` +
-      `No-slots message: ${response.noSlots}`;
-    latestStatus = { ...latestStatus, nextRefreshAt: response.nextRefreshAt };
-    fields.countdownValue.textContent = formatCountdown(response.nextRefreshAt);
+    fields.status.textContent = `Refreshed ${response.tabCount} appointment page.`;
   });
 }
 
@@ -148,7 +158,7 @@ for (const key of ["enabled", "cutoffDate", "refreshSeconds", "sound"]) {
   fields[key].addEventListener("change", saveSettings);
 }
 
-fields.scanNow.addEventListener("click", scanActiveTab);
+fields.scanNow.addEventListener("click", scanNow);
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
