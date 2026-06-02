@@ -8,6 +8,11 @@ const DEFAULTS = {
   sound: true
 };
 const REFRESH_ALARM = "tls-slot-monitor-refresh";
+const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hour = String(Math.floor(index / 2)).padStart(2, "0");
+  const minute = index % 2 === 0 ? "00" : "30";
+  return `${hour}:${minute}`;
+});
 
 const fields = {
   enabled: document.getElementById("enabled"),
@@ -93,6 +98,15 @@ function renderWeekdays(days) {
   });
 }
 
+function populateTimeSelects() {
+  for (const select of [fields.startTime, fields.endTime]) {
+    select.replaceChildren(new Option("Any", ""));
+    for (const time of HALF_HOUR_OPTIONS) {
+      select.add(new Option(time, time));
+    }
+  }
+}
+
 async function saveSettings() {
   await chrome.storage.local.set({
     enabled: fields.enabled.checked,
@@ -166,6 +180,8 @@ async function scanNow() {
     fields.status.textContent = `Refreshed ${response.tabCount} appointment page.`;
   });
 }
+
+populateTimeSelects();
 
 chrome.storage.local.get(DEFAULTS, (data) => {
   fields.enabled.checked = Boolean(data.enabled);
