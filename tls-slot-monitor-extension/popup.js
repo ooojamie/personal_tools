@@ -99,8 +99,8 @@ function compactAppointmentDates(values, limit) {
 
 function renderStatus(data) {
   latestStatus = data;
-  fields.countdownValue.textContent = formatCountdown(data.nextRefreshAt);
-  fields.countdownLabel.textContent = "Next refresh";
+  fields.countdownValue.textContent = data.refreshPaused ? "paused" : formatCountdown(data.nextRefreshAt);
+  fields.countdownLabel.textContent = data.refreshPaused ? "Paused" : "Next refresh";
   fields.enabledLabel.textContent = fields.enabled.checked ? "On" : "Off";
   fields.lastRefresh.textContent = formatLocalTime(data.lastRefreshAt);
   fields.noSlots.textContent = data.lastNoSlotsMessage === null

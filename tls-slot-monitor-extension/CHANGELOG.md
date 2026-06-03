@@ -2,6 +2,8 @@
 
 ## 2026-06-02
 
+- Fixed login pause handling so the popup shows `paused` while login or
+  verification handling is active, even if an old refresh time exists.
 - Added login assist: refresh pauses on login or verification pages, ordinary
   login buttons are tried once, and monitoring resumes after returning to the
   appointment page.

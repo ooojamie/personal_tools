@@ -12,6 +12,8 @@
   };
 
   let state = { ...DEFAULTS };
+  let authCheckTimer = null;
+  let lastAuthStatus = "";
 
   function isoToday() {
     return new Date().toISOString().slice(0, 10);
@@ -72,6 +74,8 @@
   }
 
   function sendAuthState(status) {
+    if (status === lastAuthStatus) return;
+    lastAuthStatus = status;
     chrome.runtime.sendMessage({ type: "tls-auth-state", status, url: location.href });
   }
 
@@ -131,8 +135,40 @@
     if (isAppointmentPage()) {
       await chrome.storage.local.set({ loginAssistAttemptKey: "" });
       sendAuthState("monitoring");
+      return false;
+    }
+    if (location.hostname === "visas-fr.tlscontact.com") {
+      sendAuthState("manual-login-needed");
+      return true;
     }
     return false;
+  }
+
+  function queueAuthCheck(delay = 1200) {
+    clearTimeout(authCheckTimer);
+    authCheckTimer = setTimeout(() => {
+      if (state.enabled) {
+        handleAuthState();
+      }
+    }, delay);
+  }
+
+  function runAuthCheckLater(delay) {
+    setTimeout(() => {
+      if (state.enabled) {
+        handleAuthState();
+      }
+    }, delay);
+  }
+
+  function watchAuthState() {
+    runAuthCheckLater(1200);
+    runAuthCheckLater(4500);
+    runAuthCheckLater(9000);
+
+    if (!document.body) return;
+    const observer = new MutationObserver(() => queueAuthCheck(900));
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   function appointmentText() {
@@ -357,6 +393,7 @@
   chrome.storage.local.get(DEFAULTS, (raw) => {
     state = normalizeSettings(raw);
     schedule();
+    watchAuthState();
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
